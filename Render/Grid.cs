@@ -5,13 +5,13 @@ using System.Windows.Media.Imaging;
 
 namespace ScatterPlotTool
 {
-    internal class GridBitmap
+    internal class Grid
     {
         private readonly int mWidth, mHeight;
         private readonly byte[] mPixels;
         private readonly int mStride;
 
-        public GridBitmap(int width, int height)
+        public Grid(int width, int height)
         {
             mWidth = width;
             mHeight = height;
@@ -19,7 +19,7 @@ namespace ScatterPlotTool
             mStride = width * 4;
         }
 
-        public GridBitmap(int width, int height, byte r, byte g, byte b, byte a = 255) : this(width, height)
+        public Grid(int width, int height, byte r, byte g, byte b, byte a = 255) : this(width, height)
         {
             var byteCount = width * height * 4;
             var index = 0;
@@ -55,7 +55,7 @@ namespace ScatterPlotTool
         public static void CreateRB(string filename)
         {
             var s = 501;
-            var bm = new GridBitmap(s, s);
+            var bm = new Grid(s, s);
             for (var x = 0; x < s; x++)
             {
                 for (var z = 0; z < s; z++)
@@ -63,8 +63,8 @@ namespace ScatterPlotTool
                     var xmod = x % 50;
                     var zmod = z % 50;
 
-                    var xthick = xmod < 2 || xmod == 49 || (xmod % 10) == 0;
-                    var zthick = zmod < 2 || zmod == 49 || (zmod % 10) == 0;
+                    var xthick = xmod < 2 || xmod == 49; // || (xmod % 25) == 0;
+                    var zthick = zmod < 2 || zmod == 49; // || (zmod % 25) == 0;
 
                     if (xthick || zthick)
                     {
@@ -88,7 +88,7 @@ namespace ScatterPlotTool
         public static void CreateWhite(string filename)
         {
             var s = 501;
-            var bm = new GridBitmap(s, s, 255, 255, 255);
+            var bm = new Grid(s, s, 255, 255, 255);
             for (var x = 0; x < s; x++)
             {
                 for (var z = 0; z < s; z++)
@@ -96,8 +96,8 @@ namespace ScatterPlotTool
                     var xmod = x % 50;
                     var zmod = z % 50;
 
-                    var xthick = xmod < 2 || xmod == 49 || (xmod % 10) == 0;
-                    var zthick = zmod < 2 || zmod == 49 || (zmod % 10) == 0;
+                    var xthick = xmod < 2 || xmod == 49 || (xmod % 25) == 0;
+                    var zthick = zmod < 2 || zmod == 49 || (zmod % 25) == 0;
 
                     if (xthick || zthick)
                     {
