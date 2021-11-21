@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace ScatterPlotTool
+namespace ScatterPlotTool.Algorithm
 {
     internal class Vector
     {

@@ -1,4 +1,5 @@
-﻿using ScatterPlotTool.Render;
+﻿using ScatterPlotTool.Algorithm;
+using ScatterPlotTool.Render;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -93,8 +94,6 @@ namespace ScatterPlotTool
             });
             */
 
-            await Task.Delay(5000);
-
             const int NUM_ITER = 10;
             for (int iter = 0; iter < NUM_ITER; iter++)
             {
@@ -116,7 +115,7 @@ namespace ScatterPlotTool
                     return;
                 }
 
-                await Task.Delay(2000);
+                await Task.Delay(4000);
                 if (!clustering.Iterate())
                 {
                     LogText1.Text += "Converged. ";

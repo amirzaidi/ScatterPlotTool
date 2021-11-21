@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ScatterPlotTool
+namespace ScatterPlotTool.Algorithm
 {
     internal class Cluster
     {
