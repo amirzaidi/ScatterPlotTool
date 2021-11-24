@@ -1,10 +1,13 @@
 ﻿using ScatterPlotTool.Algorithm;
+using ScatterPlotTool.Image;
 using ScatterPlotTool.Render;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 
@@ -29,6 +32,31 @@ namespace ScatterPlotTool
 
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
+            var fullResBitmap = new Bitmap("D:/Programs/DIPimage 2.9/images/flamingo.tif");
+            FullResImage.Source = fullResBitmap.GetImage();
+            FullResImage.Width = fullResBitmap.GetWidth();
+            FullResImage.Height = fullResBitmap.GetHeight();
+            LogText1.Text = "Full Resolution Image";
+
+            foreach (var lri in new[] { LowResImage1, LowResImage2, LowResImage3, LowResImage4 })
+            {
+                var lowResBitmap = new Bitmap(fullResBitmap.GetWidth() / 2, fullResBitmap.GetHeight() / 2, PixelFormats.Bgr24);
+                for (int y = 0; y < lowResBitmap.GetHeight(); y++)
+                {
+                    for (int x = 0; x < lowResBitmap.GetWidth(); x++)
+                    {
+                        lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * 2, y * 2));
+                    }
+                }
+
+                lri.Source = lowResBitmap.GetImage();
+                lri.Width = lowResBitmap.GetWidth();
+                lri.Height = lowResBitmap.GetHeight();
+            }
+            LogText3.Text = "Low Resolution Image";
+
+            // Iterate over source.
+
             // Set camera.
             mCamera.UpdatePosition();
 
@@ -108,7 +136,7 @@ namespace ScatterPlotTool
                     removeLines.Add(() => ModelGroup.Children.Remove(model));
                 }
 
-                LogText1.Text = $"Mean Iteration: {iter + 1}. ";
+                LogText2.Text = $"Mean Iteration: {iter + 1}. ";
 
                 if (iter == NUM_ITER - 1)
                 {
@@ -118,7 +146,7 @@ namespace ScatterPlotTool
                 await Task.Delay(4000);
                 if (!clustering.Iterate())
                 {
-                    LogText1.Text += "Converged. ";
+                    LogText2.Text += "Converged. ";
                     return;
                 }
 

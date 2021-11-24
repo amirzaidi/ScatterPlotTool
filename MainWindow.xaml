@@ -7,9 +7,13 @@
         mc:Ignorable="d"
         Loaded="Window_Loaded"
         KeyDown="Window_KeyDown"
-        Title="MainWindow" Height="600" Width="800">
+        Title="MainWindow"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize">
     <Grid Background="Black">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="1*" />
+            <ColumnDefinition Width="1*" />
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
@@ -17,7 +21,16 @@
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <Viewport3D Grid.Row="0" Grid.Column="0" Name="MainViewport">
+        <Grid Background="White" Grid.Row="0" Grid.Column="0">
+            <Image Grid.Row="0" Grid.Column="0"
+               Name="FullResImage"
+               Height="600" Width="600"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Center" />
+        </Grid>
+
+        <Viewport3D Grid.Row="0" Grid.Column="1" Name="MainViewport" Height="600" Width="600">
             <Viewport3D.Camera>
                 <PerspectiveCamera x:Name="Camera" 
                     FarPlaneDistance="40"
@@ -42,18 +55,49 @@
                 </ModelVisual3D>
             </Viewport3D.Children>
         </Viewport3D>
-        <Grid Grid.Row="1" Grid.Column="0" Background="White">
+
+        <Grid Background="White" Grid.Row="0" Grid.Column="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1*" />
                 <ColumnDefinition Width="1*" />
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
             </Grid.RowDefinitions>
-            <TextBlock Grid.Row="0" Grid.Column="0" Padding="8,8,8,8" Name="LogText1" />
-            <TextBlock Grid.Row="0" Grid.Column="1" Padding="8,8,8,8" Name="LogText2" />
-            <TextBlock Grid.Row="0" Grid.Column="2" Padding="8,8,8,8" Name="LogText3" />
+
+            <Image Grid.Row="0" Grid.Column="0"
+               Name="LowResImage1"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom" />
+
+            <Image Grid.Row="0" Grid.Column="1"
+               Name="LowResImage2"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Bottom" />
+
+            <Image Grid.Row="1" Grid.Column="0"
+               Name="LowResImage3"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Top" />
+
+            <Image Grid.Row="1" Grid.Column="1"
+               Name="LowResImage4"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top" />
         </Grid>
+
+        
+        <TextBlock Grid.Row="1" Grid.Column="0" Background="White" Padding="8,8,8,8" Name="LogText1" />
+        <TextBlock Grid.Row="1" Grid.Column="1" Background="White" Padding="8,8,8,8" Name="LogText2" />
+        <TextBlock Grid.Row="1" Grid.Column="2" Background="White" Padding="8,8,8,8" Name="LogText3" />
     </Grid>
 </Window>
