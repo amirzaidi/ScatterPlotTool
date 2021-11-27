@@ -71,5 +71,19 @@ namespace ScatterPlotTool
                 }
             }
         }
+
+        public static T[] Concat<T>(params T[][] arrays)
+        {
+            var outerSize = arrays.Length;
+            var innerSize = arrays[0].Length;
+
+            var result = new T[outerSize * innerSize];
+            for (int i = 0; i < outerSize; i++)
+            {
+                Array.Copy(arrays[i], 0, result, i * innerSize, innerSize);
+            }
+
+            return result;
+        }
     }
 }

@@ -13,6 +13,9 @@ namespace ScatterPlotTool.Images
         private readonly WriteableBitmap mBitmap;
         private readonly int mBytesPerPixel, mStride;
 
+        // Optimalization.
+        private byte[] mPrevGetPixelsBuf;
+
         public Bitmap(int width, int height, PixelFormat format)
         {
             mBytesPerPixel = format.BitsPerPixel / 8;
@@ -48,14 +51,18 @@ namespace ScatterPlotTool.Images
 
         public byte[] GetPixels(int x, int y, int width = 1, int height = 1)
         {
-            var pixels = new byte[mBytesPerPixel * width * height];
-            mBitmap.CopyPixels(new Int32Rect(x, y, width, height), pixels, width * mBytesPerPixel, 0);
-            return pixels;
+            var bufLen = mBytesPerPixel * width * height;
+            if (mPrevGetPixelsBuf == null || mPrevGetPixelsBuf.Length != bufLen)
+            {
+                mPrevGetPixelsBuf = new byte[bufLen];
+            }
+            mBitmap.CopyPixels(new Int32Rect(x, y, width, height), mPrevGetPixelsBuf, width * mBytesPerPixel, 0);
+            return mPrevGetPixelsBuf;
         }
 
         public void SetPixels(int x, int y, int width = 1, int height = 1, params byte[] pixels)
         {
-            mBitmap.WritePixels(new Int32Rect(x, y, width, height), pixels, mStride, 0);
+            mBitmap.WritePixels(new Int32Rect(x, y, width, height), pixels, width * mBytesPerPixel, 0);
         }
 
         public void ApplyTo(Image image)

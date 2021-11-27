@@ -22,6 +22,11 @@ namespace ScatterPlotTool
             mModelCollection = modelCollection;
         }
 
+        public void ClearAll()
+        {
+            mModelCollection.Clear();
+        }
+
         public void CreateAxes()
         {
             // Create texture.

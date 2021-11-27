@@ -75,14 +75,14 @@
                    VerticalAlignment="Bottom" />
 
                 <Image Grid.Row="1" Grid.Column="0"
-                   Name="Downsample3"
+                   Name="DownsampleNormalPermuted"
                    Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Top" />
 
                 <Image Grid.Row="1" Grid.Column="1"
-                   Name="Downsample4"
+                   Name="DownsampleSmartPermuted"
                    Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Left"
@@ -194,7 +194,7 @@
         </Grid>
 
         <Grid Grid.Row="2" Grid.Column="2" Background="White">
-            <Button Content="Separate Intrinsic Images" Margin="8,8,8,8" Padding="8,8,8,8" HorizontalAlignment="Left" />
+            <Button Content="Separate Intrinsic Images" Margin="8,8,8,8" Padding="8,8,8,8" HorizontalAlignment="Left" Click="IntrinsicSplit_Click" />
         </Grid>
     </Grid>
 </Window>

@@ -46,6 +46,11 @@ namespace ScatterPlotTool
             var wbm = new WriteableBitmap(mWidth, mHeight, dpiX, dpiY, PixelFormats.Bgra32, null);
             wbm.WritePixels(new Int32Rect(0, 0, mWidth, mHeight), mPixels, mStride, 0);
 
+            if (File.Exists(filename))
+            {
+                return;
+            }
+
             using var stream = new FileStream(filename, FileMode.Create);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(wbm));
