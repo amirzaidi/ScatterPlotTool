@@ -64,6 +64,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="1*" />
                 <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
             </Grid.RowDefinitions>
 
             <Image Grid.Row="0" Grid.Column="0"
@@ -89,6 +91,34 @@
 
             <Image Grid.Row="1" Grid.Column="1"
                Name="LowResImage4"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Top" />
+
+            <Image Grid.Row="2" Grid.Column="0"
+               Name="LowResImage5"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Bottom" />
+
+            <Image Grid.Row="2" Grid.Column="1"
+               Name="LowResImage6"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Left"
+               VerticalAlignment="Bottom" />
+
+            <Image Grid.Row="3" Grid.Column="0"
+               Name="LowResImage7"
+               Height="300" Width="300"
+               Stretch="None"
+               HorizontalAlignment="Right"
+               VerticalAlignment="Top" />
+
+            <Image Grid.Row="3" Grid.Column="1"
+               Name="LowResImage8"
                Height="300" Width="300"
                Stretch="None"
                HorizontalAlignment="Left"

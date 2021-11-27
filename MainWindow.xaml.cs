@@ -1,4 +1,6 @@
 ﻿using ScatterPlotTool.Algorithm;
+using ScatterPlotTool.Algorithm.Intrinsic;
+using ScatterPlotTool.Algorithm.Matrix;
 using ScatterPlotTool.Image;
 using ScatterPlotTool.Render;
 using System;
@@ -38,41 +40,120 @@ namespace ScatterPlotTool
             FullResImage.Height = fullResBitmap.GetHeight();
             LogText1.Text = "Full Resolution Image";
 
-            foreach (var lri in new[] { LowResImage1, LowResImage2, LowResImage3, LowResImage4 })
+            /*
+            var L = new LocalAreaMatrix(fullResBitmap.GetWidth(), fullResBitmap.GetHeight());
+            L.ComputeL((x, y) =>
             {
-                var lowResBitmap = new Bitmap(fullResBitmap.GetWidth() / 2, fullResBitmap.GetHeight() / 2, PixelFormats.Bgr24);
-                for (int y = 0; y < lowResBitmap.GetHeight(); y++)
+                var pixels = fullResBitmap.GetPixels(x, y);
+                var (r, g, b) = ((float)pixels[0], (float)pixels[1], (float)pixels[2]);
+                return (r / 255f, g / 255f, b / 255f);
+            });
+            */
+
+            var dsScale = 2;
+            var (wHalf, hHalf) = (fullResBitmap.GetWidth() / dsScale, fullResBitmap.GetHeight() / dsScale);
+
+            var lowResBitmap = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+            {
+                lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * dsScale, y * dsScale));
+            }
+
+            /*
+            LowResImage1.Source = lowResBitmap.GetImage();
+            LowResImage1.Width = wHalf;
+            LowResImage1.Height = hHalf;
+
+            // Duplicate for now.
+            LowResImage2.Source = lowResBitmap.GetImage();
+            LowResImage2.Width = wHalf;
+            LowResImage2.Height = hHalf;
+            */
+
+            var byteArrLuma = new byte[1];
+            var byteArrChroma = new byte[3];
+
+            // First attempt: Simple grayscale.
+            var lowResBmLuma = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
+            var lowResBmChroma = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+            {
+                var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
+
+                byteArrLuma[0] = (byte)Util.Clamp((r + g + b) / 3, 1, 255);
+                lowResBmLuma.SetPixels(x, y, pixels: byteArrLuma);
+
+                byteArrChroma[0] = (byte)Util.Clamp(r * 255 / byteArrLuma[0] / 2);
+                byteArrChroma[1] = (byte)Util.Clamp(g * 255 / byteArrLuma[0] / 2);
+                byteArrChroma[2] = (byte)Util.Clamp(b * 255 / byteArrLuma[0] / 2);
+                lowResBmChroma.SetPixels(x, y, pixels: byteArrChroma);
+            }
+
+            LowResImage1.Source = lowResBmLuma.GetImage();
+            LowResImage1.Width = wHalf;
+            LowResImage1.Height = hHalf;
+
+            LowResImage2.Source = lowResBmChroma.GetImage();
+            LowResImage2.Width = wHalf;
+            LowResImage2.Height = hHalf;
+
+            // Second attempt: paper implementation with two iterations.
+            var LCalc = new LocalAreaMatrix(wHalf, hHalf);
+            var L = LCalc.ComputeL((x, y) =>
+            {
+                var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
+                return (r / 255.0, g / 255.0, b / 255.0);
+            });
+
+            var GS = new GaussSeidel(L);
+            var bZero = new double[wHalf * hHalf];
+
+            foreach (var (lowResImageMono, lowResImageChroma, iterCount) in new[] {
+                (LowResImage3, LowResImage4, 1),
+                (LowResImage5, LowResImage6, 10),
+                (LowResImage7, LowResImage8, 100)
+            })
+            {
+                for (int i = 0; i < iterCount; i++)
                 {
-                    for (int x = 0; x < lowResBitmap.GetWidth(); x++)
-                    {
-                        lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * 2, y * 2));
-                    }
+                    await Task.Run(() => GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row)));
                 }
 
-                lri.Source = lowResBitmap.GetImage();
-                lri.Width = lowResBitmap.GetWidth();
-                lri.Height = lowResBitmap.GetHeight();
+                var iterVal = GS.GetInput();
+
+                var iterBmMono = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
+                var iterBmChroma = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+
+                foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+                {
+                    var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
+
+                    byteArrLuma[0] = (byte)Util.Clamp(iterVal[y * wHalf + x] * 128.0, 1.0, 255.0);
+                    iterBmMono.SetPixels(x, y, pixels: byteArrLuma);
+
+                    byteArrChroma[0] = (byte)Util.Clamp(r * 255 / byteArrLuma[0] / 2);
+                    byteArrChroma[1] = (byte)Util.Clamp(g * 255 / byteArrLuma[0] / 2);
+                    byteArrChroma[2] = (byte)Util.Clamp(b * 255 / byteArrLuma[0] / 2);
+                    iterBmChroma.SetPixels(x, y, pixels: byteArrChroma);
+                }
+
+                lowResImageMono.Source = iterBmMono.GetImage();
+                lowResImageMono.Width = wHalf;
+                lowResImageMono.Height = hHalf;
+
+                lowResImageChroma.Source = iterBmChroma.GetImage();
+                lowResImageChroma.Width = wHalf;
+                lowResImageChroma.Height = hHalf;
             }
-            LogText3.Text = "Low Resolution Image";
 
             // Iterate over source.
+            LogText3.Text = "Algorithm";
 
             // Set camera.
             mCamera.UpdatePosition();
 
             // Create plotting models.
             mPlotting.CreateAxes();
-
-            /*
-            var (Ax, Ay, Az) = mPlotting.AddRGBPoint(127, 127, 127);
-            var (Bx, By, Bz) = mPlotting.AddRGBPoint(255, 255, 255);
-
-            var A = new Point3D(Ax, Ay, Az);
-            var B = new Point3D(Bx, By, Bz);
-
-            var model = Line.Between(B, A);
-            ModelGroup.Children.Add(model);
-            */
             
             var rand = new Random(123456789);
             var bytes = new byte[3 * 16];

@@ -2,7 +2,7 @@
 
 namespace ScatterPlotTool.Algorithm.Matrix
 {
-    internal class OptimizedMatrix<T> : IMatrix<T>
+    public class OptimizedMatrix<T> : IMatrix<T>
     {
         private readonly Func<int, int, int> mGetIndexForColumn;
         private readonly int mColumnCount;
@@ -38,14 +38,10 @@ namespace ScatterPlotTool.Algorithm.Matrix
             rowData[index] = value;
         }
 
-        public int GetRowCount()
-        {
-            return mData.Length;
-        }
+        public void Update(int row, int column, Func<T, T> update) => Set(row, column, update(Get(row, column)));
 
-        public int GetColumnCount()
-        {
-            return mColumnCount;
-        }
+        public int GetRowCount() => mData.Length;
+
+        public int GetColumnCount() => mColumnCount;
     }
 }

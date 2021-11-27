@@ -1,59 +1,77 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ScatterPlotTool.Algorithm.Matrix
 {
-    internal class GaussSeidel
+    public class GaussSeidel
     {
         private readonly IMatrix<double> mA;
+        private readonly double[] mX, mXIter;
 
-        public GaussSeidel(IMatrix<double> A)
+        public GaussSeidel(IMatrix<double> A, double defaultValue = 1.0)
         {
             mA = A;
+            mX = new double[mA.GetColumnCount()];
+            mXIter = new double[mX.Length];
+
+            // Initialize the first iteration to the default value.
+            for (int i = 0; i < mX.Length; i++)
+            {
+                mX[i] = defaultValue;
+            }
         }
 
-        public double[] FindInputForOutput(double[] b, (int, double)[]? constraints = null, Action<double[], int>? log = null, int iterationCount = 10)
+        public void Iterate(double[] b, Func<int, IEnumerable<int>> getValidColumns = null, bool parallel = true)
         {
-            var x = new double[mA.GetColumnCount()];
-            for (int i = 0; i < x.Length; i++)
+            var rowCount = mA.GetRowCount();
+            var columnCount = mA.GetColumnCount();
+
+            if (getValidColumns == null)
             {
-                x[i] = 1f;
+                getValidColumns = row => Enumerable.Range(0, columnCount);
             }
 
-            for (int iter = 0; iter < iterationCount; iter++)
+            void iterateRow(int row)
             {
-                var x_iter = new double[x.Length];
-                for (int row = 0; row < mA.GetRowCount(); row++)
+                mXIter[row] = b[row];
+                foreach (var col in getValidColumns(row))
                 {
-                    for (int col = 0; col < mA.GetColumnCount(); col++)
+                    if (col != row)
                     {
-                        if (col != row)
-                        {
-                            x_iter[row] -= mA.Get(row, col) * x[col];
-                        }
-                    }
-
-                    x_iter[row] += b[row];
-                    x_iter[row] /= mA.Get(row, row);
-                }
-
-                if (constraints != null)
-                {
-                    for (int i = 0; i < constraints.Length; i++)
-                    {
-                        var (index, val) = constraints[i];
-                        x_iter[index] = val;
+                        mXIter[row] -= mA.Get(row, col) * mX[col];
                     }
                 }
-
-                if (log != null)
-                {
-                    log(x_iter, iter);
-                }
-
-                Array.Copy(x_iter, x, x.Length);
+                mXIter[row] /= mA.Get(row, row);
             }
 
-            return x;
+            if (parallel)
+            {
+                Parallel.For(0, rowCount, iterateRow);
+            }
+            else
+            {
+                for (int row = 0; row < rowCount; row++)
+                {
+                    iterateRow(row);
+                }
+            }
+
+            Array.Copy(mXIter, mX, mX.Length);
+        }
+
+        public void ForceConstraints((int, double)[] constraints)
+        {
+            foreach (var (index, val) in constraints)
+            {
+                mX[index] = val;
+            }
+        }
+
+        public double[] GetInput()
+        {
+            return mX;
         }
     }
 }
