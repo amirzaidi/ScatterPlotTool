@@ -120,34 +120,34 @@ namespace ScatterPlotTool
 
             foreach (var (lowResImageLuma, lowResImageChroma, iterCount) in new[] {
                 (LowResImage3, LowResImage4, 1),
-                (LowResImage5, LowResImage6, 20),
-                (LowResImage7, LowResImage8, 400)
+                (LowResImage5, LowResImage6, 5),
+                (LowResImage7, LowResImage8, 50)
             })
             {
-                await Task.Run(() =>
-                {
-                    for (int i = 0; i < iterCount; i++)
-                    {
-                        GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row));
-                        GS.ClampAll(MIN_LUMA, MAX_LUMA);
-                    }
-                });
-
                 var iterVal = GS.GetInput();
 
                 var iterBmLuma = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
                 var iterBmChroma = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
 
-                foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
-                {
-                    var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
-                    var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
-                    var luma = iterVal[y * wHalf + x]; // Without gamma.
-                    ApplyToPixel(iterBmChroma, iterBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
-                }
-
                 iterBmLuma.ApplyTo(lowResImageLuma);
                 iterBmChroma.ApplyTo(lowResImageChroma);
+
+                for (int i = 0; i < iterCount; i++)
+                {
+                    await Task.Run(() =>
+                    {
+                        GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row));
+                        GS.ClampAll(MIN_LUMA, MAX_LUMA);
+                    });
+
+                    foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+                    {
+                        var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
+                        var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
+                        var luma = iterVal[y * wHalf + x]; // Without gamma.
+                        ApplyToPixel(iterBmChroma, iterBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
+                    }
+                }
             }
 
             // Set camera.
