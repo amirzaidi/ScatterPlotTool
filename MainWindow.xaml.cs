@@ -1,7 +1,7 @@
 ﻿using ScatterPlotTool.Algorithm;
 using ScatterPlotTool.Algorithm.Intrinsic;
 using ScatterPlotTool.Algorithm.Matrix;
-using ScatterPlotTool.Image;
+using ScatterPlotTool.Images;
 using ScatterPlotTool.Render;
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 
@@ -20,9 +19,15 @@ namespace ScatterPlotTool
     /// </summary>
     public partial class MainWindow : Window
     {
+        private const double MIN_LUMA = 0.1;
+        private const double MAX_LUMA = 2.0;
+
         private readonly Plotting mPlotting;
         private readonly Camera mCamera;
         private readonly Dispatcher mDispatcher;
+
+        private readonly byte[] byteArrLuma = new byte[1];
+        private readonly byte[] byteArrChroma = new byte[3];
 
         public MainWindow()
         {
@@ -32,23 +37,38 @@ namespace ScatterPlotTool
             mDispatcher = Application.Current.Dispatcher;
         }
 
+        private void ApplyToPixel(Bitmap chromaBm, Bitmap lumaBm, int x, int y, double r, double g, double b, double luma)
+        {
+            luma = Util.Clamp(luma, MIN_LUMA, MAX_LUMA);
+
+            byteArrChroma[0] = PackColorToByte(r / luma);
+            byteArrChroma[1] = PackColorToByte(g / luma);
+            byteArrChroma[2] = PackColorToByte(b / luma);
+            chromaBm.SetPixels(x, y, pixels: byteArrChroma);
+
+            byteArrLuma[0] = PackColorToByte(luma / MAX_LUMA);
+            lumaBm.SetPixels(x, y, pixels: byteArrLuma);
+        }
+
+        private byte PackColorToByte(double color)
+        {
+            return (byte)Util.Clamp(ColorConversion.AddGamma(color) * 255.0);
+        }
+
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            var fullResBitmap = new Bitmap("D:/Programs/DIPimage 2.9/images/flamingo.tif");
-            FullResImage.Source = fullResBitmap.GetImage();
-            FullResImage.Width = fullResBitmap.GetWidth();
-            FullResImage.Height = fullResBitmap.GetHeight();
-            LogText1.Text = "Full Resolution Image";
+            LogText1.Text = "Downsampling: Nearest Neighbour Left, K-Means Right";
+            LogText2.Text = "K-Nearest Neighbours 16 -> 4 Pixels";
+            LogText3.Text = "Gauss-Seidel Iterations: 1, 20, 400";
 
-            /*
-            var L = new LocalAreaMatrix(fullResBitmap.GetWidth(), fullResBitmap.GetHeight());
-            L.ComputeL((x, y) =>
-            {
-                var pixels = fullResBitmap.GetPixels(x, y);
-                var (r, g, b) = ((float)pixels[0], (float)pixels[1], (float)pixels[2]);
-                return (r / 255f, g / 255f, b / 255f);
-            });
-            */
+            //const string PATH = "D:/Programs/DIPimage 2.9/images/flamingo.tif";
+            //const string PATH = @"C:\Users\Amir\Desktop\campus.tif";
+            //const string PATH = @"C:\Users\Amir\Desktop\campus2.tif";
+            //const string PATH = @"C:\Users\Amir\Desktop\minor.tif";
+            const string PATH = @"C:\Users\Amir\Desktop\street.tif";
+
+            var fullResBitmap = new Bitmap(PATH);
+            fullResBitmap.ApplyTo(FullResImage);
 
             var dsScale = 2;
             var (wHalf, hHalf) = (fullResBitmap.GetWidth() / dsScale, fullResBitmap.GetHeight() / dsScale);
@@ -59,95 +79,76 @@ namespace ScatterPlotTool
                 lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * dsScale, y * dsScale));
             }
 
-            /*
-            LowResImage1.Source = lowResBitmap.GetImage();
-            LowResImage1.Width = wHalf;
-            LowResImage1.Height = hHalf;
+            lowResBitmap.ApplyTo(DownsampleNormal);
 
-            // Duplicate for now.
-            LowResImage2.Source = lowResBitmap.GetImage();
-            LowResImage2.Width = wHalf;
-            LowResImage2.Height = hHalf;
-            */
+            // Downsample properly here.
+            lowResBitmap.ApplyTo(DownsampleSmart);
+            lowResBitmap.ApplyTo(Downsample3);
+            lowResBitmap.ApplyTo(Downsample4);
 
-            var byteArrLuma = new byte[1];
-            var byteArrChroma = new byte[3];
+            // Intrinsic Image Algorithm starts here.
 
             // First attempt: Simple grayscale.
             var lowResBmLuma = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
             var lowResBmChroma = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+
             foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
             {
-                var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
-
-                byteArrLuma[0] = (byte)Util.Clamp((r + g + b) / 3, 1, 255);
-                lowResBmLuma.SetPixels(x, y, pixels: byteArrLuma);
-
-                byteArrChroma[0] = (byte)Util.Clamp(r * 255 / byteArrLuma[0] / 2);
-                byteArrChroma[1] = (byte)Util.Clamp(g * 255 / byteArrLuma[0] / 2);
-                byteArrChroma[2] = (byte)Util.Clamp(b * 255 / byteArrLuma[0] / 2);
-                lowResBmChroma.SetPixels(x, y, pixels: byteArrChroma);
+                var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
+                var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
+                var luma = ColorConversion.GetGrayscale(r2, g2, b2) * 2.0 * MAX_LUMA; // Without gamma.
+                ApplyToPixel(lowResBmChroma, lowResBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
             }
 
-            LowResImage1.Source = lowResBmLuma.GetImage();
-            LowResImage1.Width = wHalf;
-            LowResImage1.Height = hHalf;
-
-            LowResImage2.Source = lowResBmChroma.GetImage();
-            LowResImage2.Width = wHalf;
-            LowResImage2.Height = hHalf;
+            lowResBmLuma.ApplyTo(LowResImage1);
+            lowResBmChroma.ApplyTo(LowResImage2);
 
             // Second attempt: paper implementation with two iterations.
             var LCalc = new LocalAreaMatrix(wHalf, hHalf);
             var L = LCalc.ComputeL((x, y) =>
             {
                 var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
-                return (r / 255.0, g / 255.0, b / 255.0);
+                return (
+                    ColorConversion.RemoveGamma(r / 255.0),
+                    ColorConversion.RemoveGamma(g / 255.0),
+                    ColorConversion.RemoveGamma(b / 255.0)
+                );
             });
 
             var GS = new GaussSeidel(L);
             var bZero = new double[wHalf * hHalf];
 
-            foreach (var (lowResImageMono, lowResImageChroma, iterCount) in new[] {
+            foreach (var (lowResImageLuma, lowResImageChroma, iterCount) in new[] {
                 (LowResImage3, LowResImage4, 1),
-                (LowResImage5, LowResImage6, 10),
-                (LowResImage7, LowResImage8, 100)
+                (LowResImage5, LowResImage6, 20),
+                (LowResImage7, LowResImage8, 400)
             })
             {
-                for (int i = 0; i < iterCount; i++)
+                await Task.Run(() =>
                 {
-                    await Task.Run(() => GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row)));
-                }
+                    for (int i = 0; i < iterCount; i++)
+                    {
+                        GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row));
+                        GS.ClampAll(MIN_LUMA, MAX_LUMA);
+                    }
+                });
 
                 var iterVal = GS.GetInput();
 
-                var iterBmMono = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
+                var iterBmLuma = new Bitmap(wHalf, hHalf, PixelFormats.Gray8);
                 var iterBmChroma = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
 
                 foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
                 {
-                    var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple();
-
-                    byteArrLuma[0] = (byte)Util.Clamp(iterVal[y * wHalf + x] * 128.0, 1.0, 255.0);
-                    iterBmMono.SetPixels(x, y, pixels: byteArrLuma);
-
-                    byteArrChroma[0] = (byte)Util.Clamp(r * 255 / byteArrLuma[0] / 2);
-                    byteArrChroma[1] = (byte)Util.Clamp(g * 255 / byteArrLuma[0] / 2);
-                    byteArrChroma[2] = (byte)Util.Clamp(b * 255 / byteArrLuma[0] / 2);
-                    iterBmChroma.SetPixels(x, y, pixels: byteArrChroma);
+                    var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
+                    var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
+                    var luma = iterVal[y * wHalf + x]; // Without gamma.
+                    ApplyToPixel(iterBmChroma, iterBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
                 }
 
-                lowResImageMono.Source = iterBmMono.GetImage();
-                lowResImageMono.Width = wHalf;
-                lowResImageMono.Height = hHalf;
-
-                lowResImageChroma.Source = iterBmChroma.GetImage();
-                lowResImageChroma.Width = wHalf;
-                lowResImageChroma.Height = hHalf;
+                iterBmLuma.ApplyTo(lowResImageLuma);
+                iterBmChroma.ApplyTo(lowResImageChroma);
             }
-
-            // Iterate over source.
-            LogText3.Text = "Algorithm";
 
             // Set camera.
             mCamera.UpdatePosition();
@@ -155,6 +156,7 @@ namespace ScatterPlotTool
             // Create plotting models.
             mPlotting.CreateAxes();
             
+            // Downsampling algorithm here.
             var rand = new Random(123456789);
             var bytes = new byte[3 * 16];
             rand.NextBytes(bytes);

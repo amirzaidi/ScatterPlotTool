@@ -69,6 +69,21 @@ namespace ScatterPlotTool.Algorithm.Matrix
             }
         }
 
+        public void ClampAll(double lower, double higher)
+        {
+            for (int row = 0; row < mX.Length; row++)
+            {
+                if (mX[row] < lower)
+                {
+                    mX[row] = lower;
+                }
+                else if (mX[row] > higher)
+                {
+                    mX[row] = higher;
+                }
+            }
+        }
+
         public double[] GetInput()
         {
             return mX;

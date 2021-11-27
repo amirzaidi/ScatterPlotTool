@@ -22,12 +22,59 @@
         </Grid.RowDefinitions>
 
         <Grid Background="White" Grid.Row="0" Grid.Column="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+            
             <Image Grid.Row="0" Grid.Column="0"
                Name="FullResImage"
                Height="600" Width="600"
                Stretch="None"
                HorizontalAlignment="Left"
-               VerticalAlignment="Center" />
+               VerticalAlignment="Top" />
+
+            <Grid Grid.Row="1" Grid.Column="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="1*" />
+                    <RowDefinition Height="1*" />
+                </Grid.RowDefinitions>
+
+                <Image Grid.Row="0" Grid.Column="0"
+                   Name="DownsampleNormal"
+                   Height="300" Width="300"
+                   Stretch="None"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom" />
+
+                <Image Grid.Row="0" Grid.Column="1"
+                   Name="DownsampleSmart"
+                   Height="300" Width="300"
+                   Stretch="None"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Bottom" />
+
+                <Image Grid.Row="1" Grid.Column="0"
+                   Name="Downsample3"
+                   Height="300" Width="300"
+                   Stretch="None"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Top" />
+
+                <Image Grid.Row="1" Grid.Column="1"
+                   Name="Downsample4"
+                   Height="300" Width="300"
+                   Stretch="None"
+                   HorizontalAlignment="Left"
+                   VerticalAlignment="Top" />
+            </Grid>
         </Grid>
 
         <Viewport3D Grid.Row="0" Grid.Column="1" Name="MainViewport" Height="600" Width="600">
