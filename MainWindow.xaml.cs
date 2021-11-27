@@ -1,10 +1,12 @@
-﻿using ScatterPlotTool.Algorithm;
+﻿using Microsoft.Win32;
+using ScatterPlotTool.Algorithm;
 using ScatterPlotTool.Algorithm.Intrinsic;
 using ScatterPlotTool.Algorithm.Matrix;
 using ScatterPlotTool.Images;
 using ScatterPlotTool.Render;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -19,15 +21,12 @@ namespace ScatterPlotTool
     /// </summary>
     public partial class MainWindow : Window
     {
-        private const double MIN_LUMA = 0.1;
-        private const double MAX_LUMA = 2.0;
+        private const int DOWNSAMPLE_SCALE = 2;
 
         private readonly Plotting mPlotting;
         private readonly Camera mCamera;
         private readonly Dispatcher mDispatcher;
-
-        private readonly byte[] byteArrLuma = new byte[1];
-        private readonly byte[] byteArrChroma = new byte[3];
+        private CancellationTokenSource? mCTS;
 
         public MainWindow()
         {
@@ -37,29 +36,13 @@ namespace ScatterPlotTool
             mDispatcher = Application.Current.Dispatcher;
         }
 
-        private void ApplyToPixel(Bitmap chromaBm, Bitmap lumaBm, int x, int y, double r, double g, double b, double luma)
-        {
-            luma = Util.Clamp(luma, MIN_LUMA, MAX_LUMA);
-
-            byteArrChroma[0] = PackColorToByte(r / luma);
-            byteArrChroma[1] = PackColorToByte(g / luma);
-            byteArrChroma[2] = PackColorToByte(b / luma);
-            chromaBm.SetPixels(x, y, pixels: byteArrChroma);
-
-            byteArrLuma[0] = PackColorToByte(luma / MAX_LUMA);
-            lumaBm.SetPixels(x, y, pixels: byteArrLuma);
-        }
-
-        private byte PackColorToByte(double color)
-        {
-            return (byte)Util.Clamp(ColorConversion.AddGamma(color) * 255.0);
-        }
-
-        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             LogText1.Text = "Downsampling: Nearest Neighbour Left, K-Means Right";
             LogText2.Text = "K-Nearest Neighbours 16 -> 4 Pixels";
-            LogText3.Text = "Gauss-Seidel Iterations: 1, 20, 400";
+            LogText3.Text = "Gauss-Seidel Iterations: 1, 5, 50";
+
+            /*
 
             //const string PATH = "D:/Programs/DIPimage 2.9/images/flamingo.tif";
             //const string PATH = @"C:\Users\Amir\Desktop\campus.tif";
@@ -70,13 +53,12 @@ namespace ScatterPlotTool
             var fullResBitmap = new Bitmap(PATH);
             fullResBitmap.ApplyTo(FullResImage);
 
-            var dsScale = 2;
-            var (wHalf, hHalf) = (fullResBitmap.GetWidth() / dsScale, fullResBitmap.GetHeight() / dsScale);
+            var (wHalf, hHalf) = (fullResBitmap.GetWidth() / DOWNSAMPLE_SCALE, fullResBitmap.GetHeight() / DOWNSAMPLE_SCALE);
 
             var lowResBitmap = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
             foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
             {
-                lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * dsScale, y * dsScale));
+                lowResBitmap.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * DOWNSAMPLE_SCALE, y * DOWNSAMPLE_SCALE));
             }
 
             lowResBitmap.ApplyTo(DownsampleNormal);
@@ -96,8 +78,8 @@ namespace ScatterPlotTool
             {
                 var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
                 var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
-                var luma = ColorConversion.GetGrayscale(r2, g2, b2) * 2.0 * MAX_LUMA; // Without gamma.
-                ApplyToPixel(lowResBmChroma, lowResBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
+                var luma = ColorConversion.GetGrayscale(r2, g2, b2) * 2.0 * LumaChromaUtil.MAX_LUMA; // Without gamma.
+                LumaChromaUtil.ApplyToPixel(lowResBmChroma, lowResBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
             }
 
             lowResBmLuma.ApplyTo(LowResImage1);
@@ -137,7 +119,7 @@ namespace ScatterPlotTool
                     await Task.Run(() =>
                     {
                         GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row));
-                        GS.ClampAll(MIN_LUMA, MAX_LUMA);
+                        GS.ClampAll(LumaChromaUtil.MIN_LUMA, LumaChromaUtil.MAX_LUMA);
                     });
 
                     foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
@@ -145,7 +127,7 @@ namespace ScatterPlotTool
                         var (r, g, b) = lowResBitmap.GetPixels(x, y).ToThreeTuple(); // With gamma.
                         var (r2, g2, b2) = ColorConversion.RemoveGamma(r / 255.0, g / 255.0, b / 255.0); // Without gamma.
                         var luma = iterVal[y * wHalf + x]; // Without gamma.
-                        ApplyToPixel(iterBmChroma, iterBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
+                        LumaChromaUtil.ApplyToPixel(iterBmChroma, iterBmLuma, x, y, r2, g2, b2, luma); // Pass all values without gamma.
                     }
                 }
             }
@@ -189,6 +171,7 @@ namespace ScatterPlotTool
 
             var clustering = new Cluster(data, means);
             var removeLines = new List<Action>();
+            */
 
             /*
             Task.Run(async () =>
@@ -205,6 +188,7 @@ namespace ScatterPlotTool
             });
             */
 
+            /*
             const int NUM_ITER = 10;
             for (int iter = 0; iter < NUM_ITER; iter++)
             {
@@ -244,6 +228,7 @@ namespace ScatterPlotTool
                 removeLines.ForEach(x => x());
                 removeLines.Clear();
             }
+            */
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
@@ -274,6 +259,151 @@ namespace ScatterPlotTool
 
             // Update the camera's position.
             mCamera.UpdatePosition();
+        }
+
+        private void SelectImage_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Images (*.tif)|*.tif|All files (*.*)|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (mCTS != null)
+                {
+                    mCTS.Cancel();
+                }
+
+                mCTS = new CancellationTokenSource();
+                StartProcessing(dialog.FileName, mCTS.Token);
+            }
+        }
+
+        private async void StartProcessing(string filename, CancellationToken token)
+        {
+            // Full size image.
+            var fullResBitmap = new Bitmap(filename);
+            fullResBitmap.ApplyTo(FullResImage);
+
+            // Simple downsample.
+            var (wHalf, hHalf) = (fullResBitmap.GetWidth() / 2, fullResBitmap.GetHeight() / 2);
+            var downsampleNormalBm = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+            downsampleNormalBm.ApplyTo(DownsampleNormal);
+            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+            {
+                downsampleNormalBm.SetPixels(x, y, pixels: fullResBitmap.GetPixels(x * 2, y * 2));
+            }
+
+            // Setup for the smart downsample 3D render.
+            mCamera.UpdatePosition();
+            mPlotting.CreateAxes();
+
+            // Smart downsample.
+            var (wQuar, hQuar) = (wHalf / 2, hHalf / 2);
+            var downsampleSmartBm = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
+            downsampleSmartBm.ApplyTo(DownsampleSmart);
+
+            // Reusable buffers.
+            var data = new (byte, byte, byte)[16];
+            var dataPoints = new Point3D[data.Length];
+
+            var means = new (byte, byte, byte)[4];
+            var meanUpdaters = new Func<byte, byte, byte, Point3D>[means.Length];
+            var meanPoints = new Point3D[means.Length];
+
+            for (int i = 0; i < 4; i++)
+            {
+                meanUpdaters[i] = mPlotting.AddRGBMean();
+                meanPoints[i] = meanUpdaters[i](0, 0, 0);
+            }
+
+            var clustering = new Cluster(data, means);
+            var removeLines = new List<Action>();
+
+            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wQuar, hQuar))
+            {
+                // Take an area of 4x4.
+                var pixelsBGRA = fullResBitmap.GetPixels(x * 4, y * 4, 4, 4);
+
+                // Fill the buffers.
+                for (int i = 0; i < pixelsBGRA.Length; i += 4)
+                {
+                    data[i / 4] = (pixelsBGRA[i], pixelsBGRA[i + 1], pixelsBGRA[i + 2]);
+                    dataPoints[i / 4] = mPlotting.AddRGBPoint(pixelsBGRA[i + 2], pixelsBGRA[i + 1], pixelsBGRA[i + 0]);
+                }
+
+                // Reset the means to the first 4 points of the data.
+                Array.Copy(data, means, 4);
+
+                // Remove old RGB points.
+                mPlotting.ClearRGBPoints();
+
+                const int NUM_ITER = 4;
+                for (int iter = 0; iter < NUM_ITER; iter++)
+                {
+                    // Clear the old lines that are now invalid.
+                    removeLines.CallAllThenClear();
+
+                    // Add one line for each point.
+                    clustering.FindMeansForPoints();
+
+                    // Update the lines between the means and the points.
+                    if (!token.IsCancellationRequested)
+                    {
+                        for (int i = 0; i < data.Length; i++)
+                        {
+                            var A = meanPoints[clustering.GetMeanIndexForPointIndex(i)];
+                            var B = dataPoints[i];
+
+                            var model = Line.Between(A, B);
+                            ModelGroup.Children.Add(model);
+                            removeLines.Add(() => ModelGroup.Children.Remove(model));
+                        }
+                    }
+
+                    // Wait for a bit to show the user what is happening.
+                    //LogText2.Text = $"Mean Iteration: {iter + 1}. ";
+                    if (!token.IsCancellationRequested)
+                    {
+                        await Task.Delay(500, token).IgnoreExceptions();
+                    }
+
+                    if (clustering.MoveMeansToPoints() == 0)
+                    {
+                        //LogText2.Text += "Converged. ";
+                        break;
+                    }
+
+                    // Update the means in the UI if there were changes.
+                    if (!token.IsCancellationRequested)
+                    {
+                        for (int i = 0; i < means.Length; i++)
+                        {
+                            var (b, g, r) = means[i];
+                            meanPoints[i] = meanUpdaters[i](r, g, b);
+                        }
+                    }
+                }
+
+                // To-Do: Reorder these using permutations.
+                var (x2, y2) = (2 * x, 2 * y);
+                downsampleSmartBm.SetPixels(x2 + 0, y2 + 0, pixels: means[0].ToArray());
+                downsampleSmartBm.SetPixels(x2 + 1, y2 + 0, pixels: means[1].ToArray());
+                downsampleSmartBm.SetPixels(x2 + 0, y2 + 1, pixels: means[2].ToArray());
+                downsampleSmartBm.SetPixels(x2 + 1, y2 + 1, pixels: means[3].ToArray());
+
+                if (!token.IsCancellationRequested || x == 0)
+                {
+                    // Update the UI.
+                    await Task.Delay(1);
+                }
+            }
+        }
+
+        private void FastForward_Click(object sender, RoutedEventArgs e)
+        {
+            mCTS?.Cancel();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
@@ -11,6 +12,10 @@ namespace ScatterPlotTool
         private const string GRID_RB_PNG = "grid_rb.png";
 
         private readonly Model3DCollection mModelCollection;
+        private readonly MeshGeometry3D mPlaneMesh = Models.CreatePlane(1.0);
+        private readonly MeshGeometry3D mCubeMesh = Models.CreateCube(0.025);
+        private readonly MeshGeometry3D mTrihedronMesh = Models.CreateTrihedron(0.1);
+        private readonly List<Action> mClearRGBPoints = new();
 
         public Plotting(Model3DCollection modelCollection)
         {
@@ -26,8 +31,7 @@ namespace ScatterPlotTool
             // Create models.
             for (int i = 0; i < 3; i++)
             {
-                var mesh = Models.CreatePlane(1.0);
-                var model = Models.CreateModel(mesh, new ImageBrush(new BitmapImage(new Uri(
+                var model = Models.CreateModel(mPlaneMesh, new ImageBrush(new BitmapImage(new Uri(
                     i == 0
                         ? GRID_RB_PNG
                         : GRID_WHITE_PNG,
@@ -56,20 +60,21 @@ namespace ScatterPlotTool
         {
             var (x, y, z) = ConvertRGBtoXYZ(r, g, b);
 
-            var mesh = Models.CreateCube(0.025);
-            var model = Models.CreateModel(mesh, new SolidColorBrush(Color.FromRgb(r, g, b)));
+            var model = Models.CreateModel(mCubeMesh, new SolidColorBrush(Color.FromRgb(r, g, b)));
             model.Transform = new TranslateTransform3D(x, y, z);
             mModelCollection.Add(model);
+            mClearRGBPoints.Add(() => mModelCollection.Remove(model));
 
             return new Point3D(x, y, z);
         }
 
+        public void ClearRGBPoints() => mClearRGBPoints.CallAllThenClear();
+
         // Return a lambda that can modify the position and color.
         public Func<byte, byte, byte, Point3D> AddRGBMean()
         {
-            var mesh = Models.CreateTrihedron(0.1);
             var brush = new SolidColorBrush(Colors.Gray);
-            var model = Models.CreateModel(mesh, brush);
+            var model = Models.CreateModel(mTrihedronMesh, brush);
 
             mModelCollection.Add(model);
 

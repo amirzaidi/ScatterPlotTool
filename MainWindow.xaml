@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Loaded="Window_Loaded"
         KeyDown="Window_KeyDown"
-        Title="MainWindow"
+        Title="Intrinsic Image Decomposition"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize">
     <Grid Background="Black">
@@ -17,11 +17,24 @@
             <ColumnDefinition Width="1*" />
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="11*" />
+            <RowDefinition Height="1*" />
+            <RowDefinition Height="10*" />
             <RowDefinition Height="1*" />
         </Grid.RowDefinitions>
 
-        <Grid Background="White" Grid.Row="0" Grid.Column="0">
+        <Grid Grid.Row="0" Grid.Column="0" Background="White">
+            <TextBlock Padding="8,8,8,8" Name="LogText1" />
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.Column="1" Background="White">
+            <TextBlock Padding="8,8,8,8" Name="LogText2" />
+        </Grid>
+
+        <Grid Grid.Row="0" Grid.Column="2" Background="White">
+            <TextBlock Padding="8,8,8,8" Name="LogText3" />
+        </Grid>
+        
+        <Grid Background="White" Grid.Row="1" Grid.Column="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" />
             </Grid.ColumnDefinitions>
@@ -32,7 +45,7 @@
             
             <Image Grid.Row="0" Grid.Column="0"
                Name="FullResImage"
-               Height="600" Width="600"
+               Height="400" Width="400"
                Stretch="None"
                HorizontalAlignment="Left"
                VerticalAlignment="Top" />
@@ -49,35 +62,35 @@
 
                 <Image Grid.Row="0" Grid.Column="0"
                    Name="DownsampleNormal"
-                   Height="300" Width="300"
+                   Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Bottom" />
 
                 <Image Grid.Row="0" Grid.Column="1"
                    Name="DownsampleSmart"
-                   Height="300" Width="300"
+                   Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Bottom" />
 
                 <Image Grid.Row="1" Grid.Column="0"
                    Name="Downsample3"
-                   Height="300" Width="300"
+                   Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Right"
                    VerticalAlignment="Top" />
 
                 <Image Grid.Row="1" Grid.Column="1"
                    Name="Downsample4"
-                   Height="300" Width="300"
+                   Height="200" Width="200"
                    Stretch="None"
                    HorizontalAlignment="Left"
                    VerticalAlignment="Top" />
             </Grid>
         </Grid>
 
-        <Viewport3D Grid.Row="0" Grid.Column="1" Name="MainViewport" Height="600" Width="600">
+        <Viewport3D Grid.Row="1" Grid.Column="1" Name="MainViewport" Height="600" Width="600">
             <Viewport3D.Camera>
                 <PerspectiveCamera x:Name="Camera" 
                     FarPlaneDistance="40"
@@ -103,7 +116,7 @@
             </Viewport3D.Children>
         </Viewport3D>
 
-        <Grid Background="White" Grid.Row="0" Grid.Column="2">
+        <Grid Background="White" Grid.Row="1" Grid.Column="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="1*" />
                 <ColumnDefinition Width="1*" />
@@ -117,64 +130,71 @@
 
             <Image Grid.Row="0" Grid.Column="0"
                Name="LowResImage1"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Right"
                VerticalAlignment="Bottom" />
 
             <Image Grid.Row="0" Grid.Column="1"
                Name="LowResImage2"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Left"
                VerticalAlignment="Bottom" />
 
             <Image Grid.Row="1" Grid.Column="0"
                Name="LowResImage3"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Right"
                VerticalAlignment="Top" />
 
             <Image Grid.Row="1" Grid.Column="1"
                Name="LowResImage4"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Left"
                VerticalAlignment="Top" />
 
             <Image Grid.Row="2" Grid.Column="0"
                Name="LowResImage5"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Right"
                VerticalAlignment="Bottom" />
 
             <Image Grid.Row="2" Grid.Column="1"
                Name="LowResImage6"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Left"
                VerticalAlignment="Bottom" />
 
             <Image Grid.Row="3" Grid.Column="0"
                Name="LowResImage7"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Right"
                VerticalAlignment="Top" />
 
             <Image Grid.Row="3" Grid.Column="1"
                Name="LowResImage8"
-               Height="300" Width="300"
+               Height="200" Width="200"
                Stretch="None"
                HorizontalAlignment="Left"
                VerticalAlignment="Top" />
         </Grid>
 
-        
-        <TextBlock Grid.Row="1" Grid.Column="0" Background="White" Padding="8,8,8,8" Name="LogText1" />
-        <TextBlock Grid.Row="1" Grid.Column="1" Background="White" Padding="8,8,8,8" Name="LogText2" />
-        <TextBlock Grid.Row="1" Grid.Column="2" Background="White" Padding="8,8,8,8" Name="LogText3" />
+        <Grid Grid.Row="2" Grid.Column="0" Background="White">
+            <Button Content="Select Image" Margin="8,8,8,8" Padding="8,8,8,8" HorizontalAlignment="Left" Click="SelectImage_Click" />
+        </Grid>
+
+        <Grid Grid.Row="2" Grid.Column="1" Background="White">
+            <Button Content="Toggle Fast Forward" Margin="8,8,8,8" Padding="8,8,8,8" HorizontalAlignment="Left" Click="FastForward_Click" />
+        </Grid>
+
+        <Grid Grid.Row="2" Grid.Column="2" Background="White">
+            <Button Content="Separate Intrinsic Images" Margin="8,8,8,8" Padding="8,8,8,8" HorizontalAlignment="Left" />
+        </Grid>
     </Grid>
 </Window>

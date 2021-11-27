@@ -37,7 +37,7 @@ namespace ScatterPlotTool.Images
             dpiY = DPI;
 
             mBytesPerPixel = format.BitsPerPixel / 8;
-            mStride = width * (format.BitsPerPixel / 8);
+            mStride = width * mBytesPerPixel;
             mBitmap = new WriteableBitmap(width, height, dpiX, dpiY, format, null);
 
             // Copy the data.
@@ -49,7 +49,7 @@ namespace ScatterPlotTool.Images
         public byte[] GetPixels(int x, int y, int width = 1, int height = 1)
         {
             var pixels = new byte[mBytesPerPixel * width * height];
-            mBitmap.CopyPixels(new Int32Rect(x, y, width, height), pixels, mStride, 0);
+            mBitmap.CopyPixels(new Int32Rect(x, y, width, height), pixels, width * mBytesPerPixel, 0);
             return pixels;
         }
 

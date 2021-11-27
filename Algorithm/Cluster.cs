@@ -1,4 +1,4 @@
-﻿using System;
+﻿using System.Threading;
 
 namespace ScatterPlotTool.Algorithm
 {
@@ -17,11 +17,10 @@ namespace ScatterPlotTool.Algorithm
 
             mDataPointMeans = new int[dataPoints.Length];
             mMeanTotals = new int[means.Length, 4];
-
-            FindMeans();
         }
 
-        private void FindMeans()
+        // Step 1: Calculate for each point to which mean it belongs.
+        public void FindMeansForPoints(bool parallel = true)
         {
             // Reset the mean counts.
             for (int i = 0; i < mMeans.Length; i++)
@@ -32,10 +31,11 @@ namespace ScatterPlotTool.Algorithm
                 mMeanTotals[i, 3] = 0;
             }
 
-            // For each color, add it to the best mean.
-            for (int i = 0; i < mDataPointMeans.Length; i++)
+            // For a given color, add it to the best mean.
+            Util.ParallelLoop(0, mDataPoints.Length, dataPointIndex =>
             {
-                var (r, g, b) = mDataPoints[i];
+                var (r, g, b) = mDataPoints[dataPointIndex];
+                var dists = new int[mMeans.Length];
                 int minDist = int.MaxValue;
                 int minMean = -1;
 
@@ -44,6 +44,7 @@ namespace ScatterPlotTool.Algorithm
                 {
                     var (rMean, gMean, bMean) = mMeans[j];
                     var currDist = Vector.LengthSquared(r - rMean, g - gMean, b - bMean);
+                    dists[j] = currDist;
                     if (currDist < minDist)
                     {
                         minDist = currDist;
@@ -51,48 +52,57 @@ namespace ScatterPlotTool.Algorithm
                     }
                 }
 
-                // Add it to the mean.
-                mMeanTotals[minMean, 0] += 1;
-                mMeanTotals[minMean, 1] += r;
-                mMeanTotals[minMean, 2] += g;
-                mMeanTotals[minMean, 3] += b;
-
-                // Save the mean that was found.
-                mDataPointMeans[i] = minMean;
-            }
-        }
-
-        // The means have been updated by the constructor or previous call to this function.
-        public bool Iterate()
-        {
-            // Keep track of if there was a difference.
-            var foundDiff = false;
-            for (int j = 0; j < mMeans.Length; j++)
-            {
-                var meanDiv = mMeanTotals[j, 0];
-                var newMean = (
-                    (byte)(mMeanTotals[j, 1] / meanDiv),
-                    (byte)(mMeanTotals[j, 2] / meanDiv),
-                    (byte)(mMeanTotals[j, 3] / meanDiv)
-                );
-
-                if (newMean != mMeans[j])
+                for (int j = 0; j < mMeans.Length; j++)
                 {
-                    foundDiff = true;
+                    if (dists[j] == minDist)
+                    {
+                        // Add this point to every mean that is minDist away from that point.
+                        Interlocked.Add(ref mMeanTotals[j, 0], 1);
+                        Interlocked.Add(ref mMeanTotals[j, 1], r);
+                        Interlocked.Add(ref mMeanTotals[j, 2], g);
+                        Interlocked.Add(ref mMeanTotals[j, 3], b);
+                    }
                 }
 
-                mMeans[j] = newMean;
-            }
+                // Save the mean that was found. This is only used for visualization.
+                mDataPointMeans[dataPointIndex] = minMean;
+            }, parallel);
+        }
 
-            // Update the means for each data point for the next iteration.
-            FindMeans();
+        // Step 2: Move each mean to the average of points it belongs to.
+        public int MoveMeansToPoints(bool parallel = true)
+        {
+            // Keep track of if there was a difference.
+            int differences = 0;
+            Util.ParallelLoop(0, mMeans.Length, meanIndex =>
+            {
+                var meanDiv = mMeanTotals[meanIndex, 0];
+                if (meanDiv != 0)
+                {
+                    var newMean = (
+                        (byte)(mMeanTotals[meanIndex, 1] / meanDiv),
+                        (byte)(mMeanTotals[meanIndex, 2] / meanDiv),
+                        (byte)(mMeanTotals[meanIndex, 3] / meanDiv)
+                    );
 
-            return foundDiff;
+                    if (newMean != mMeans[meanIndex])
+                    {
+                        mMeans[meanIndex] = newMean;
+                        Interlocked.Increment(ref differences);
+                    }
+                }
+            }, parallel);
+            return differences;
         }
 
         public int GetMeanIndexForPointIndex(int pointIndex)
         {
             return mDataPointMeans[pointIndex];
+        }
+
+        public int GetPointCountForMean(int meanIndex)
+        {
+            return mMeanTotals[meanIndex, 0];
         }
     }
 }
