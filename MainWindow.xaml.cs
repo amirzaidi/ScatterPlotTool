@@ -94,12 +94,15 @@ namespace ScatterPlotTool
             var fullResBm = new Bitmap(filename);
             fullResBm.ApplyTo(FullResImage);
 
-            // Simple downsample.
             var (wHalf, hHalf) = (fullResBm.GetWidth() / 2, fullResBm.GetHeight() / 2);
+            var (wQuar, hQuar) = (wHalf / 2, hHalf / 2);
+
+            // Simple downsample.
             var lowResNormalBm = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
             lowResNormalBm.ApplyTo(DownsampleNormal);
+
             var downsampleNormalBuf = new byte[3];
-            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))
+            foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wQuar * 2, hQuar * 2))
             {
                 var pixels = fullResBm.GetPixels(x * 2, y * 2, 2, 2);
                 downsampleNormalBuf[0] = (byte)((pixels[0] + pixels[4] + pixels[8] + pixels[12]) / 4);
@@ -114,7 +117,6 @@ namespace ScatterPlotTool
             mPlotting.CreateAxes();
 
             // Smart downsample.
-            var (wQuar, hQuar) = (wHalf / 2, hHalf / 2);
             var lowResSmartBm = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
             lowResSmartBm.ApplyTo(DownsampleSmart);
 
@@ -155,8 +157,18 @@ namespace ScatterPlotTool
                     }
                 }
 
-                // Reset the means to the first 4 points of the data.
-                Array.Copy(data, means, 4);
+                // Reset the means to the top left pixel of each 2x2 area in the 4x4 area.
+                // Array.Copy(data, means, 4);
+                //means[0] = data[0];
+                //means[1] = data[2];
+                //means[2] = data[8];
+                //means[3] = data[10];
+
+                // Invert the order for a more obvious effect in the permuting step.
+                means[0] = data[10];
+                means[1] = data[8];
+                means[2] = data[2];
+                means[3] = data[0];
 
                 for (int iter = 0; iter < NUM_ITER; iter++)
                 {

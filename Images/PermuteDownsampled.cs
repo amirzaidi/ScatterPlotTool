@@ -1,5 +1,6 @@
 ﻿using ScatterPlotTool.Algorithm;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,13 +16,14 @@ namespace ScatterPlotTool.Images
             var downsamplePermutedBm = new Bitmap(wHalf, hHalf, PixelFormats.Bgr24);
             downsamplePermutedBm.ApplyTo(image);
 
+            // Reusable variables.
             var pixels2x2ordered = new byte[12];
-            var lowestL2Dist = int.MaxValue;
             var lowestL2Order = Array.Empty<int>();
 
             var (wQuar, hQuar) = (wHalf / 2, hHalf / 2);
             foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wQuar, hQuar))
             {
+                var lowestL2Dist = int.MaxValue;
                 var pixels4x4 = fullResBm.GetPixels(x * 4, y * 4, 4, 4);
                 var pixels2x2 = lowResBm.GetPixels(x * 2, y * 2, 2, 2);
 
@@ -39,7 +41,7 @@ namespace ScatterPlotTool.Images
                     foreach (var (xSmall, ySmall) in CoordGenerator.Range2D(4))
                     {
                         var indexLarge = 4 * (ySmall * 4 + xSmall);
-                        var indexSmall = 3 * ((ySmall / 2) * 2 + xSmall / 2);
+                        var indexSmall = 3 * ((ySmall / 2) * 2 + (xSmall / 2));
 
                         var bDiff = pixels2x2ordered[indexSmall] - pixels4x4[indexLarge];
                         var gDiff = pixels2x2ordered[indexSmall + 1] - pixels4x4[indexLarge + 1];
