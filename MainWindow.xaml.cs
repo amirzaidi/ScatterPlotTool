@@ -6,6 +6,7 @@ using ScatterPlotTool.Images;
 using ScatterPlotTool.Render;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -194,6 +195,8 @@ namespace ScatterPlotTool
                             ModelGroup.Children.Add(model);
                             removeLines.Add(() => ModelGroup.Children.Remove(model));
                         }
+
+                        await Task.Delay(150, token).IgnoreExceptions();
                     }
 
                     if (clustering.MoveMeansToPoints() == 0)
@@ -298,6 +301,10 @@ namespace ScatterPlotTool
                     {
                         GS.Iterate(bZero, row => LocalAreaMatrix.GetValidColumns(wHalf, hHalf, row));
                         GS.ClampAll(LumaChromaUtil.MIN_LUMA, LumaChromaUtil.MAX_LUMA);
+
+                        // Two diagonals as constraints.
+                        GS.AverageOver(Enumerable.Range(0, wHalf).Select(x => x + (wHalf * (x * hHalf / wHalf))));
+                        GS.AverageOver(Enumerable.Range(0, wHalf).Select(x => (wHalf - x - 1) + (wHalf * (x * hHalf / wHalf))));
                     });
 
                     foreach (var (x, y) in CoordGenerator.Range2D(0, 0, wHalf, hHalf))

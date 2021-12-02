@@ -23,6 +23,25 @@ namespace ScatterPlotTool.Algorithm.Matrix
             }
         }
 
+        public void AverageOver(IEnumerable<int> coords)
+        {
+            var totalValue = 0.0;
+            var totalCount = 0;
+
+            foreach (var coord in coords)
+            {
+                totalValue += mX[coord];
+                totalCount += 1;
+            }
+
+            totalValue /= totalCount;
+
+            foreach (var coord in coords)
+            {
+                mX[coord] = totalValue;
+            }
+        }
+
         public void Iterate(double[] b, Func<int, IEnumerable<int>> getValidColumns = null, bool parallel = true)
         {
             var rowCount = mA.GetRowCount();
